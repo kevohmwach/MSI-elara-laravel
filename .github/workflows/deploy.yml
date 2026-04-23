@@ -1,0 +1,97 @@
+name: Laravel Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+# --- MANDATORY FOR OIDC ---
+permissions:
+  id-token: write # Required for requesting the JWT from GitHub
+  contents: read  # Required for actions/checkout
+
+jobs:
+  # --- JOB 1: BUILD ---
+  build_app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, bcmath, gd, zip # Ensure standard Laravel extensions
+
+      - name: Install Composer Dependencies
+        run: composer install --no-dev --optimize-autoloader
+
+      - name: Install NPM & Build Vite
+        run: |
+          npm install
+          npm run build
+
+      - name: Create Deployment Zip
+        run: zip -r release.zip . -x "*.git*" "node_modules/*" "tests/*" "storage/framework/cache/[^.]*" "storage/framework/sessions/[^.]*" "storage/framework/views/[^.]*" "storage/logs/[^.]*"
+
+      - name: Archive Production Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: laravel-app-zip
+          path: release.zip
+          include-hidden-files: true
+
+  # --- JOB 2: DEPLOY TO STAGING ---
+  deploy_staging:
+    needs: build_app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: laravel-app-zip
+          path: .
+
+      # --- UPDATED FOR OIDC ---
+      - name: Azure Login
+        uses: azure/login@v2 # Updated to v2 for better OIDC support
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Staging Slot
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: 'laravel-webapp-elora'
+          slot-name: 'laravel-app-staging'
+          package: release.zip
+
+  # --- JOB 3: SWAP TO PRODUCTION (Approval Required) --- 
+  promote_to_production:
+    needs: deploy_staging
+    runs-on: ubuntu-latest
+    environment: 'Production' # Triggers environment protection rules in GitHub
+    steps:
+      # --- UPDATED FOR OIDC ---
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Swap Slots
+        run: |
+          az webapp deployment slot swap \
+            --resource-group app-service-rg \
+            --name laravel-webapp-elora \
+            --slot laravel-app-staging \
+            --target-slot production
+
+      # -- RUN MIGRATIONS AFTER SWAP ---
+      # - name: Run Production Migrations
+      #   run: |
+      #     az webapp ssh \
+      #       --resource-group app-service-rg \
+      #       --name laravel-webapp-elora \
+      #       --command "php artisan migrate --force"

@@ -1,0 +1,91 @@
+name: Laravel Build and Deploy
+
+on:
+  push:
+    branches: [ mainTest ]
+
+jobs:
+  # --- JOB 1: BUILD ---
+  build_app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      
+      # - name: Install Dependencies
+      #   run: composer install --no-ansi --no-interaction --prefer-dist
+
+      - name: Install Composer Dependencies
+        run: composer install --no-dev --optimize-autoloader
+
+      - name: Install NPM & Build Vite
+        run: |
+          npm install
+          npm run build # Compiles your public/build folder
+
+      - name: Create Deployment Zip
+        run: zip -r release.zip . -x "*.git*" "node_modules/*" "tests/*" "storage/framework/cache/[^.]*" "storage/framework/sessions/[^.]*" "storage/framework/views/[^.]*" "storage/logs/[^.]*"
+
+      - name: Archive Production Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: laravel-app-zip
+          path: release.zip # Upload only the single zip file 
+          # name: laravel-app-bundle
+          # path: .  # Uploads everything including the new 'vendor' folder
+          include-hidden-files: true
+
+  # --- JOB 2: DEPLOY TO STAGING ---
+  deploy_staging:
+    needs: build_app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          # name: laravel-app-bundle
+          name: laravel-app-zip
+          path: . # This forces it to extract into the CURRENT directory, not a subfolder
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Staging Slot
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: 'laravel-webapp-elora'
+          slot-name: 'laravel-app-staging'
+          # package: .
+          package: release.zip # Point directly to the zip file
+
+      # - name: Run Staging Migrations
+      #   run: |
+      #     az webapp ssh \
+      #       --resource-group app-service-rg\
+      #       --name laravel-webapp-elora \
+      #       --slot laravel-app-staging \
+      #       --command "php artisan migrate --force"
+        
+  # --- JOB 3: SWAP TO PRODUCTION (Approval Required) --- 
+  promote_to_production:
+    needs: deploy_staging
+    runs-on: ubuntu-latest
+    environment: 'Production'
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Swap Slots
+        run: |
+          az webapp deployment slot swap \
+            --resource-group app-service-rg\
+            --name laravel-webapp-elora \
+            --slot laravel-app-staging \
+            --target-slot production

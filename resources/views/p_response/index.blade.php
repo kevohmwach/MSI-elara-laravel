@@ -1,0 +1,81 @@
+@extends('layouts.app')
+
+<style>
+    .download_link{
+        color: white;
+        font-weight: bold;
+        text-decoration: none;
+    }
+    button{
+        /* background-color: #6c757d; */
+        background-color: #198754;
+        color: white;
+        /* padding: 10px 20px; */
+        border-radius: 2px;
+        border: 1px;
+    }
+
+    .wrapper-table{
+        width: 80%;
+        margin: auto;
+        padding: 20px;
+    }
+
+    .patients {
+        font-family: Arial, Helvetica, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+        }
+
+        .patients td, .patients th {
+        border: 1px solid #ddd;
+        padding: 8px;
+        }
+
+        .patients tr:nth-child(even){background-color: #f2f2f2;}
+
+        .patients tr:hover {background-color: #ddd;}
+
+        .patients th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-align: left;
+            background-color: #6c757d;
+            color: white;
+        }
+
+</style>
+
+@section('content')
+
+<div class="wrapper">
+    <div class="subsections_showblade" ><span class="pre_sectionTitle">Patient's Preconfigured Options</span>
+        @if(Auth::user()->role>1)
+            <a href="{{route('p_response_create')}}">
+                <button <?php if(Auth::user()->role<2){echo 'disabled';} ?> type="button" class="btn btn-md btn-primary" >Create</button>
+            </a>
+        @endif
+        {{-- <button class="btn btn-primary ms-7">
+            <a>Create</a>
+        </button> --}}
+    </div>
+    {{-- <button class="btn btn-primary">Create</button> --}}
+    <table  class="patients">
+        <thead>
+            <th>Patient Response</th>  
+             <th>Question No.</th>
+            <th>Action</th>
+        </thead>
+        @foreach ($data as $item)
+            <tr>
+                <td>{{$item->patient_response}}</td>
+                 <td>{{$item->question_no}}</td>
+                <td>
+                    <a href="{{route('p_response_edit', ['response'=>$item->id ] )}}" >Update</a>
+                </td>
+            </tr>
+        @endforeach
+    </table>
+</div>
+
+@endsection
