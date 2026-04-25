@@ -59,7 +59,7 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy to Staging Slot
+      - name: Deploy to Staging Slot 
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'laravel-webapp-elora'
