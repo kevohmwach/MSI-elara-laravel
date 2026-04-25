@@ -28,5 +28,9 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.env') === 'production') {
             URL::forceScheme('https');
         }
+        // Force the root URL to be the Gateway IP instead of the Azure Hostname
+        if (isset($_SERVER['HTTP_X_FORWARDED_HOST'])) {
+            \URL::forceRootUrl(config('app.url'));
+        }
     }
 }
