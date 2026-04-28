@@ -24,9 +24,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        // Force HTTPS if the application is running in Azure (production)
-        if (config('app.env') === 'production') {
-            URL::forceScheme('https');
-        }
+        if ($appUrl = config('app.url')) {
+            // This stops Laravel from using the .azurewebsites.net hostname
+            URL::forceRootUrl($appUrl);
+
+            // This ensures if your APP_URL starts with https, 
+            // Laravel generates https links automatically.
+            if (str_starts_with($appUrl, 'https')) {
+                URL::forceScheme('https');
+            } 
+        }   
+
+    
     }
 }
