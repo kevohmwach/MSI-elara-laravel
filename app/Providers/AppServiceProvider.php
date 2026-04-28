@@ -24,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        /*
         // Force HTTPS if the application is running in Azure (production)
         if (config('app.env') === 'production') {
             URL::forceScheme('https');
@@ -32,5 +33,6 @@ class AppServiceProvider extends ServiceProvider
         if (isset($_SERVER['HTTP_X_FORWARDED_HOST'])) {
             \URL::forceRootUrl(config('app.url'));
         }
+        */
     }
 }
