@@ -32,7 +32,11 @@ class AppServiceProvider extends ServiceProvider
             // Laravel generates https links automatically.
             if (str_starts_with($appUrl, 'https')) {
                 URL::forceScheme('https');
-            } 
+            } else {
+                // Force HTTP if the URL explicitly says http
+                // This stops the 'X-Forwarded-Proto' header from upgrading the links
+                URL::forceScheme('http'); 
+            }
         }   
 
     
