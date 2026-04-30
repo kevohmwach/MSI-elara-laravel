@@ -26,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
     {
         if ($appUrl = config('app.url')) {
             // This stops Laravel from using the .azurewebsites.net hostname
-            URL::forceRootUrl($appUrl);
+            URL::forceRootUrl($appUrl); 
 
             // This ensures if your APP_URL starts with https, 
             // Laravel generates https links automatically.
