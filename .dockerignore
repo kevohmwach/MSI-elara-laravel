@@ -3,3 +3,12 @@ node_modules/
 .git
 .env
 
+# Block local storage data and system files
+storage/framework/cache/data/
+storage/framework/sessions/
+storage/framework/views/
+storage/logs/*.log
+database/*.sqlite
+.idea/
+.vscode/
+
