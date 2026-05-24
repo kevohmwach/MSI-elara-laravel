@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\P_ResponsePre;
 use Illuminate\Support\Facades\Auth;
 
-class P_responsePreController extends Controller
+class P_ResponsePreController extends Controller
 {
     public function __construct()
     {

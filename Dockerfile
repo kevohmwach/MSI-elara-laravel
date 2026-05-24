@@ -2,9 +2,13 @@
 FROM node:20-alpine AS node-builder
 WORKDIR /app
 COPY package*.json vite.config.js ./
+
+#Run clean Install
+RUN npm ci
+
 # Copy resources folder where your JS/CSS lives
 COPY resources/ ./resources/
-RUN npm ci
+
 # Compiles assets into public/build/
 RUN npm run build 
 
@@ -15,6 +19,13 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg && docker-php-ext-in
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www
 COPY . .
+
+# FIX: Create the required storage directory skeletons so artisan doesn't crash
+RUN mkdir -p storage/framework/cache/data \
+             storage/framework/sessions \
+             storage/framework/views \
+             bootstrap/cache
+             
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # === Stage 3: Minimal Production Runtime ===
