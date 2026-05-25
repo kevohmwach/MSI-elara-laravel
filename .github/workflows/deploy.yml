@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
 
-# --- MANDATORY FOR OIDC ---
+# --- MANDATORY FOR OIDC --- 
 permissions:
   id-token: write # Required for requesting the JWT from GitHub
   contents: read  # Required for actions/checkout
